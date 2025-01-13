@@ -9,7 +9,7 @@ import (
 type Root [32]byte
 
 func (r *Root) MarshalJSON() ([]byte, error) {
-	return []byte(fmt.Sprintf(`"0x%x`, r)), nil
+	return []byte(fmt.Sprintf(`"0x%x"`, *r)), nil
 }
 
 func (r *Root) UnmarshalJSON(input []byte) error {
@@ -19,11 +19,130 @@ func (r *Root) UnmarshalJSON(input []byte) error {
 	if !strings.HasPrefix(string(input), `"0x`) || input[67] != '"' {
 		return fmt.Errorf("invalid root encoding %s", string(input))
 	}
-	_, err := hex.Decode(r[:], input[3:67])
+	_, err := hex.Decode(r[:], input[3:len(input)-1])
 	return err
 }
 
 type Signature [96]byte
+
+func (s *Signature) MarshalJSON() ([]byte, error) {
+	return []byte(fmt.Sprintf(`"0x%x"`, *s)), nil
+}
+
+func (s *Signature) UnmarshalJSON(input []byte) error {
+	if len(input) != 2+2+2*len(s) {
+		return fmt.Errorf("invalid signature length %d", len(input))
+	}
+	if !strings.HasPrefix(string(input), `"0x`) || input[len(input)-1] != '"' {
+		return fmt.Errorf("invalid signature encoding %s", string(input))
+	}
+	_, err := hex.Decode(s[:], input[3:len(input)-1])
+	return err
+}
+
+type KZGCommitment [48]byte
+
+func (s *KZGCommitment) MarshalJSON() ([]byte, error) {
+	return []byte(fmt.Sprintf(`"0x%x"`, *s)), nil
+}
+
+func (s *KZGCommitment) UnmarshalJSON(input []byte) error {
+	if len(input) != 2+2+2*len(s) {
+		return fmt.Errorf("invalid commitment length %d", len(input))
+	}
+	if !strings.HasPrefix(string(input), `"0x`) || input[len(input)-1] != '"' {
+		return fmt.Errorf("invalid commitment encoding %s", string(input))
+	}
+	_, err := hex.Decode(s[:], input[3:len(input)-1])
+	return err
+}
+
+type Hash [32]byte
+
+func (h *Hash) MarshalJSON() ([]byte, error) {
+	return []byte(fmt.Sprintf(`"0x%x"`, *h)), nil
+}
+
+func (h *Hash) UnmarshalJSON(input []byte) error {
+	if len(input) != 2+2+2*len(h) {
+		return fmt.Errorf("invalid hash length %d", len(input))
+	}
+	if !strings.HasPrefix(string(input), `"0x`) || input[len(input)-1] != '"' {
+		return fmt.Errorf("invalid hash encoding %s", string(input))
+	}
+	_, err := hex.Decode(h[:], input[3:len(input)-1])
+	return err
+}
+
+type Address [20]byte
+
+func (a *Address) MarshalJSON() ([]byte, error) {
+	return []byte(fmt.Sprintf(`"0x%x"`, *a)), nil
+}
+
+func (a *Address) UnmarshalJSON(input []byte) error {
+	if len(input) != 2+2+2*len(a) {
+		return fmt.Errorf("invalid address length %d", len(input))
+	}
+	if !strings.HasPrefix(string(input), `"0x`) || input[len(input)-1] != '"' {
+		return fmt.Errorf("invalid address encoding %s", string(input))
+	}
+	_, err := hex.Decode(a[:], input[3:len(input)-1])
+	return err
+}
+
+type LogsBloom [256]byte
+
+func (b *LogsBloom) MarshalJSON() ([]byte, error) {
+	return []byte(fmt.Sprintf(`"0x%x"`, *b)), nil
+}
+
+func (b *LogsBloom) UnmarshalJSON(input []byte) error {
+	if len(input) != 2+2+2*len(b) {
+		return fmt.Errorf("invalid bloom length %d", len(input))
+	}
+	if !strings.HasPrefix(string(input), `"0x`) || input[len(input)-1] != '"' {
+		return fmt.Errorf("invalid bloom encoding %s", string(input))
+	}
+	_, err := hex.Decode(b[:], input[3:len(input)-1])
+	return err
+}
+
+type Bytes []byte
+
+func (b *Bytes) MarshalJSON() ([]byte, error) {
+	return []byte(fmt.Sprintf(`"0x%x"`, *b)), nil
+}
+
+func (b *Bytes) UnmarshalJSON(input []byte) error {
+	if len(input) < 2+2 {
+		return fmt.Errorf("invalid bytes encoding length %d", len(input))
+	}
+	if !strings.HasPrefix(string(input), `"0x`) || input[len(input)-1] != '"' {
+		return fmt.Errorf("invalid bytes encoding %s", string(input))
+	}
+	*b = make([]byte, len(input[3:len(input)-1])/2)
+	_, err := hex.Decode(*b, input[3:len(input)-1])
+	return err
+}
+
+type SyncCommitteeBits [64]byte
+
+func (b *SyncCommitteeBits) UnmarshalJSON(data []byte) error {
+	str := string(data)
+	if len(str) != len(b)*2+2+2 {
+		return fmt.Errorf("invalid JSON format - wrong length")
+	}
+	if !strings.HasPrefix(str, `"0x`) || str[len(str)-1] != '"' {
+		return fmt.Errorf("invalid JSON format - wrong envelop")
+	}
+	_, err := hex.Decode(b[:], []byte(str[3:len(data)-1]))
+	return err
+}
+
+func (b *SyncCommitteeBits) MarshalJSON() ([]byte, error) {
+	return []byte(fmt.Sprintf("\"0x%x\"", *b)), nil
+}
 
 type AggregateAndProof struct {
 	Index          uint64       `json:"aggregator_index"`
@@ -32,14 +151,14 @@ type AggregateAndProof struct {
 }
 
 type Checkpoint struct {
-	Epoch uint64 `json:"epoch"`
+	Epoch uint64 `json:"epoch,string"`
 	Root  Root   `json:"root" ssz-size:"32"`
 }
 
 type AttestationData struct {
-	Slot            uint64      `json:"slot"`
-	Index           uint64      `json:"index"`
-	BeaconBlockHash [32]byte    `json:"beacon_block_root" ssz-size:"32"`
+	Slot            uint64      `json:"slot,string"`
+	Index           uint64      `json:"index,string"`
+	BeaconBlockHash Root        `json:"beacon_block_root" ssz-size:"32"`
 	Source          *Checkpoint `json:"source"`
 	Target          *Checkpoint `json:"target"`
 }
@@ -115,9 +234,9 @@ type HistoricalBatch struct {
 }
 
 type Eth1Data struct {
-	DepositRoot  Root     `json:"deposit_root" ssz-size:"32"`
-	DepositCount uint64   `json:"deposit_count"`
-	BlockHash    [32]byte `json:"block_hash" ssz-size:"32"`
+	DepositRoot  Root   `json:"deposit_root" ssz-size:"32"`
+	DepositCount uint64 `json:"deposit_count,string"`
+	BlockHash    Hash   `json:"block_hash" ssz-size:"32"`
 }
 
 type SigningRoot struct {
@@ -185,7 +304,7 @@ type BeaconBlockPhase0 struct {
 type BeaconBlockBodyPhase0 struct {
 	RandaoReveal      Signature              `json:"randao_reveal" ssz-size:"96"`
 	Eth1Data          *Eth1Data              `json:"eth1_data"`
-	Graffiti          [32]byte               `json:"graffiti" ssz-size:"32"`
+	Graffiti          Hash                   `json:"graffiti" ssz-size:"32"`
 	ProposerSlashings []*ProposerSlashing    `json:"proposer_slashings" ssz-max:"16"`
 	AttesterSlashings []*AttesterSlashing    `json:"attester_slashings" ssz-max:"2"`
 	Attestations      []*Attestation         `json:"attestations" ssz-max:"128"`
@@ -305,8 +424,8 @@ type BeaconBlockBodyAltair struct {
 }
 
 type SyncAggregate struct {
-	SyncCommiteeBits      [64]byte  `json:"sync_committee_bits" ssz-size:"64"`
-	SyncCommiteeSignature Signature `json:"sync_committee_signature" ssz-size:"96"`
+	SyncCommiteeBits      SyncCommitteeBits `json:"sync_committee_bits" ssz-size:"64"`
+	SyncCommiteeSignature Signature         `json:"sync_committee_signature" ssz-size:"96"`
 }
 
 type SyncCommittee struct {
@@ -397,7 +516,7 @@ type BlindedBeaconBlockBody struct {
 }
 
 type ExecutionPayload struct {
-	ParentHash    [32]byte  `ssz-size:"32" json:"parent_hash"`
+	ParentHash    Hash      `ssz-size:"32" json:"parent_hash"`
 	FeeRecipient  [20]byte  `ssz-size:"20" json:"fee_recipient"`
 	StateRoot     [32]byte  `ssz-size:"32" json:"state_root"`
 	ReceiptsRoot  [32]byte  `ssz-size:"32" json:"receipts_root"`
@@ -416,7 +535,7 @@ type ExecutionPayload struct {
 type Uint256 [32]byte
 
 type ExecutionPayloadHeader struct {
-	ParentHash       [32]byte  `json:"parent_hash" ssz-size:"32"`
+	ParentHash       Hash      `json:"parent_hash" ssz-size:"32"`
 	FeeRecipient     [20]byte  `json:"fee_recipient" ssz-size:"20"`
 	StateRoot        [32]byte  `json:"state_root" ssz-size:"32"`
 	ReceiptsRoot     [32]byte  `json:"receipts_root" ssz-size:"32"`
@@ -484,21 +603,23 @@ type PowBlock struct {
 // Capella types
 
 type ExecutionPayloadCapella struct {
-	ParentHash    [32]byte      `ssz-size:"32" json:"parent_hash"`
-	FeeRecipient  [20]byte      `ssz-size:"20" json:"fee_recipient"`
-	StateRoot     [32]byte      `ssz-size:"32" json:"state_root"`
-	ReceiptsRoot  [32]byte      `ssz-size:"32" json:"receipts_root"`
-	LogsBloom     [256]byte     `ssz-size:"256" json:"logs_bloom"`
-	PrevRandao    [32]byte      `ssz-size:"32" json:"prev_randao"`
-	BlockNumber   uint64        `json:"block_number"`
-	GasLimit      uint64        `json:"gas_limit"`
-	GasUsed       uint64        `json:"gas_used"`
-	Timestamp     uint64        `json:"timestamp"`
-	ExtraData     []byte        `ssz-max:"32" json:"extra_data"`
+	ParentHash    Hash          `ssz-size:"32" json:"parent_hash"`
+	FeeRecipient  Address       `ssz-size:"20" json:"fee_recipient"`
+	StateRoot     Hash          `ssz-size:"32" json:"state_root"`
+	ReceiptsRoot  Hash          `ssz-size:"32" json:"receipts_root"`
+	LogsBloom     LogsBloom     `ssz-size:"256" json:"logs_bloom"`
+	PrevRandao    Hash          `ssz-size:"32" json:"prev_randao"`
+	BlockNumber   uint64        `json:"block_number,string"`
+	GasLimit      uint64        `json:"gas_limit,string"`
+	GasUsed       uint64        `json:"gas_used,string"`
+	Timestamp     uint64        `json:"timestamp,string"`
+	ExtraData     Bytes         `ssz-max:"32" json:"extra_data"`
 	BaseFeePerGas Uint256       `ssz-size:"32" json:"base_fee_per_gas"`
-	BlockHash     [32]byte      `ssz-size:"32" json:"block_hash"`
-	Transactions  [][]byte      `ssz-max:"1048576,1073741824" ssz-size:"?,?" json:"transactions"`
+	BlockHash     Hash          `ssz-size:"32" json:"block_hash"`
+	Transactions  []Bytes       `ssz-max:"1048576,1073741824" ssz-size:"?,?" json:"transactions"`
 	Withdrawals   []*Withdrawal `json:"withdrawals" ssz-max:"16"`
+	BlobGasUsed   uint64        `json:"blob_gas_used,string" ssz-size:"32"`
+	ExcessBlobGas uint64        `json:"excess_blob_gas,string" ssz-size:"32"`
 }
 
 type ExecutionPayloadHeaderCapella struct {
@@ -536,10 +657,10 @@ type SignedBLSToExecutionChange struct {
 }
 
 type Withdrawal struct {
-	Index          uint64   `json:"index"`
-	ValidatorIndex uint64   `json:"validator_index"`
-	Address        [20]byte `json:"address" ssz-size:"20"`
-	Amount         uint64   `json:"amount"`
+	Index          uint64  `json:"index,string"`
+	ValidatorIndex uint64  `json:"validator_index,string"`
+	Address        Address `json:"address" ssz-size:"20"`
+	Amount         uint64  `json:"amount,string"`
 }
 
 type BeaconStateCapella struct {
@@ -579,8 +700,8 @@ type SignedBeaconBlockCapella struct {
 }
 
 type BeaconBlockCapella struct {
-	Slot          uint64                  `json:"slot"`
-	ProposerIndex uint64                  `json:"proposer_index"`
+	Slot          uint64                  `json:"slot,string"`
+	ProposerIndex uint64                  `json:"proposer_index,string"`
 	ParentRoot    Root                    `json:"parent_root" ssz-size:"32"`
 	StateRoot     Root                    `json:"state_root" ssz-size:"32"`
 	Body          *BeaconBlockBodyCapella `json:"body"`
@@ -589,7 +710,7 @@ type BeaconBlockCapella struct {
 type BeaconBlockBodyCapella struct {
 	RandaoReveal          Signature                     `json:"randao_reveal" ssz-size:"96"`
 	Eth1Data              *Eth1Data                     `json:"eth1_data"`
-	Graffiti              [32]byte                      `json:"graffiti" ssz-size:"32"`
+	Graffiti              Hash                          `json:"graffiti" ssz-size:"32"`
 	ProposerSlashings     []*ProposerSlashing           `json:"proposer_slashings" ssz-max:"16"`
 	AttesterSlashings     []*AttesterSlashing           `json:"attester_slashings" ssz-max:"2"`
 	Attestations          []*Attestation                `json:"attestations" ssz-max:"128"`
@@ -598,6 +719,7 @@ type BeaconBlockBodyCapella struct {
 	SyncAggregate         *SyncAggregate                `json:"sync_aggregate"`
 	ExecutionPayload      *ExecutionPayloadCapella      `json:"execution_payload"`
 	BlsToExecutionChanges []*SignedBLSToExecutionChange `json:"bls_to_execution_changes" ssz-max:"16"`
+	BlobKzgCommitments    []KZGCommitment               `json:"blob_kzg_commitments" ssz-max:"4096"`
 }
 
 type LightClientHeaderCapella struct {

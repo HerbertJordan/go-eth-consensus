@@ -9272,7 +9272,7 @@ func (e *ExecutionPayloadCapella) UnmarshalSSZ(buf []byte) error {
 		if err != nil {
 			return err
 		}
-		e.Transactions = make([][]byte, num)
+		e.Transactions = make([]Bytes, num)
 		err = ssz.UnmarshalDynamic(buf, num, func(indx int, buf []byte) (err error) {
 			if len(buf) > 1073741824 {
 				return ssz.ErrBytesLength
