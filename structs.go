@@ -1,6 +1,27 @@
 package consensus
 
+import (
+	"encoding/hex"
+	"fmt"
+	"strings"
+)
+
 type Root [32]byte
+
+func (r *Root) MarshalJSON() ([]byte, error) {
+	return []byte(fmt.Sprintf(`"0x%x`, r)), nil
+}
+
+func (r *Root) UnmarshalJSON(input []byte) error {
+	if len(input) != 2+2+2*len(r) {
+		return fmt.Errorf("invalid root length %d", len(input))
+	}
+	if !strings.HasPrefix(string(input), `"0x`) || input[67] != '"' {
+		return fmt.Errorf("invalid root encoding %s", string(input))
+	}
+	_, err := hex.Decode(r[:], input[3:67])
+	return err
+}
 
 type Signature [96]byte
 
@@ -178,8 +199,8 @@ type SignedBeaconBlockHeader struct {
 }
 
 type BeaconBlockHeader struct {
-	Slot          uint64 `json:"slot"`
-	ProposerIndex uint64 `json:"proposer_index"`
+	Slot          uint64 `json:"slot,string"`
+	ProposerIndex uint64 `json:"proposer_index,string"`
 	ParentRoot    Root   `json:"parent_root" ssz-size:"32"`
 	StateRoot     Root   `json:"state_root" ssz-size:"32"`
 	BodyRoot      Root   `json:"body_root" ssz-size:"32"`
